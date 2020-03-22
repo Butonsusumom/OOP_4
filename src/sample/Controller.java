@@ -137,7 +137,7 @@ public class Controller {
     @FXML
     public void onClickMethodSave() throws IOException {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Open Resource File");
+        fileChooser.setTitle("Save File");
         fileChooser.getExtensionFilters().addAll(
                 new FileChooser.ExtensionFilter("Text Files", "*.txt","*.csv"),
                 new FileChooser.ExtensionFilter("Binar Files", "*.dat"),
@@ -185,16 +185,16 @@ public class Controller {
             switch (ext) {
                 case ("json"):
                     JsonConverter conv = new JsonConverter();
-                    personData = conv.deserialise(name);
+                    personData = conv.deserialise(name, personData);
                     break;
                 case ("dat"):
                     BinarConverter binar = new BinarConverter();
-                    personData = binar.deserialise(name);
+                    personData = binar.deserialise(name, personData);
                     break;
                 case ("csv"):
                 case ("txt"):
                     TextConverter text = new TextConverter();
-                    personData = text.deserialise(name);
+                    personData = text.deserialise(name, personData);
                     break;
             }
             personTable.setItems(personData);

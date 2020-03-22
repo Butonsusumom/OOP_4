@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.control.Alert;
 import tsubulko.entity.Person;
 
 import javax.swing.text.Utilities;
@@ -32,7 +33,8 @@ public class JsonConverter implements Serialization{
     }
 
     @Override
-    public ObservableList<Person> deserialise(String name) throws IOException {
+    public ObservableList<Person> deserialise(String name,ObservableList<Person> now) throws IOException {
+        try{
         String jsonuser = "";
         Scanner in = new Scanner(new File(name));
         while(in.hasNext())
@@ -49,5 +51,16 @@ public class JsonConverter implements Serialization{
         result.setAll(arrayListResult);
         System.out.println(result);
         return result;
+    }
+        catch (Exception e) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText("Invalid json format");
+
+        alert.showAndWait();
+        return now;
+    }
     }
 }

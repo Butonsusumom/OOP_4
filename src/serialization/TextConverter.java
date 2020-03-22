@@ -2,6 +2,7 @@ package serialization;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.control.Alert;
 import tsubulko.entity.*;
 
 import java.io.*;
@@ -29,7 +30,8 @@ public class TextConverter implements Serialization  {
     }
 
     @Override
-    public ObservableList<Person> deserialise(String name) throws IOException, ClassNotFoundException {
+    public ObservableList<Person> deserialise(String name,ObservableList<Person> now) throws IOException, ClassNotFoundException {
+        try {
         ObservableList<Person> newList =  FXCollections.observableArrayList();
         String line = "";
         String COMMA_DELIMITER = ",";
@@ -60,6 +62,17 @@ public class TextConverter implements Serialization  {
         System.out.println(newList);
         fileReader.close();
         return newList;
+    }
+        catch (Exception e) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText("Invalid binar format");
+
+        alert.showAndWait();
+        return now;
+    }
 
     }
 }
