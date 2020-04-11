@@ -53,7 +53,7 @@ public class TextConverter implements Serialization  {
                         newList.add(Designer.read(tokens));
                         break;
                     case ("Student"):
-                        //newList.add(Student.read(tokens));
+                        newList.add(Student.read(tokens));
                         break;
                 }
                // System.out.println(pers);

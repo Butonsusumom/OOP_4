@@ -555,7 +555,7 @@
             <Font name="Berlin Sans FB" size="18.0" />
          </font>
       </Button>
-      <Button fx:id="loadbutton" layoutX="174.0" layoutY="21.0" mnemonicParsing="false" onAction="#onClickMethodLoad" prefHeight="39.0" prefWidth="110.0" style="-fx-background-color: #000000;" text="Load" textFill="#f5f5f5">
+      <Button fx:id="loadbutton" layoutX="297.0" layoutY="21.0" mnemonicParsing="false" onAction="#onClickMethodLoad" prefHeight="39.0" prefWidth="110.0" style="-fx-background-color: #000000;" text="Load" textFill="#f5f5f5">
          <effect>
             <Reflection />
          </effect>
@@ -563,5 +563,6 @@
             <Font name="Berlin Sans FB" size="18.0" />
          </font>
       </Button>
+      <ComboBox fx:id="plugBox" onShowing="#onClickMethodPlug" layoutX="173.0" layoutY="21.0" prefHeight="39.0" prefWidth="110.0"/>
    </children>
 </AnchorPane>

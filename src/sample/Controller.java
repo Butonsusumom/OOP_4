@@ -3,9 +3,11 @@ package sample;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
+import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.chart.PieChart;
@@ -14,6 +16,9 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import plugSerialization.plagBinarConverter;
+import plugSerialization.plagJsonConverter;
+import plugSerialization.plagTextConverter;
 import serialization.BinarConverter;
 import serialization.JsonConverter;
 import serialization.TextConverter;
@@ -22,8 +27,11 @@ import tsubulko.entity.*;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.file.Files;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 
 //-------------------------------VARIABLES AND CONSTANTS-------------------------------------
@@ -123,10 +131,13 @@ public class Controller {
     private ComboBox testEdu;
     @FXML
     private ComboBox testType;
+    @FXML
+    private ComboBox<String> plugBox;
 
     public ObservableList<Person> personData = FXCollections.observableArrayList();
     int idPerson = 0;
     int idEdit = -1;
+    Class<?>[] availablePlugins = null;
 
 
     //-------------------------------GUI METHODS-------------------------------------
@@ -135,69 +146,152 @@ public class Controller {
 
 
     @FXML
-    public void onClickMethodSave() throws IOException {
+    public void onClickMethodSave() throws IOException, NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
+        ObservableList<String> plugs = plugBox.getItems();
+        int selectedPluginNumber = plugs.indexOf(plugBox.getValue());
+
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save File");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Text Files", "*.txt","*.csv"),
-                new FileChooser.ExtensionFilter("Binar Files", "*.dat"),
-                new FileChooser.ExtensionFilter("JSON Files", "*.json"));
-        File selectedFile = fileChooser.showSaveDialog(new Stage());
-        if (selectedFile != null) {
-            String name = selectedFile.getPath();
-            String[] split = name.split("\\.");
-            String ext = split[split.length - 1];
-            System.out.println(name);
-            System.out.println(ext);
-            switch (ext) {
-                case ("json"):
-                    JsonConverter conv = new JsonConverter();
-                    conv.serialise(personData, name);
-                    break;
-                case ("dat"):
-                    BinarConverter binar = new BinarConverter();
-                    binar.serialise(personData, name);
-                    break;
-                case ("csv"):
-                case ("txt"):
-                    TextConverter tex = new TextConverter();
-                    tex.serialise(personData, name);
-                    break;
+        if (plugBox.getValue()=="None") {
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Text Files", "*.txt", "*.csv"),
+                    new FileChooser.ExtensionFilter("Binar Files", "*.dat"),
+                    new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+            File selectedFile = fileChooser.showSaveDialog(new Stage());
+            if (selectedFile != null) {
+                String name = selectedFile.getPath();
+                String[] split = name.split("\\.");
+                String ext = split[split.length - 1];
+                System.out.println(name);
+                System.out.println(ext);
+                switch (ext) {
+                    case ("json"):
+                        JsonConverter conv = new JsonConverter();
+                        conv.serialise(personData, name);
+                        break;
+                    case ("dat"):
+                        BinarConverter binar = new BinarConverter();
+                        binar.serialise(personData, name);
+                        break;
+                    case ("csv"):
+                    case ("txt"):
+                        TextConverter tex = new TextConverter();
+                        tex.serialise(personData, name);
+                        break;
+                }
+            }
+        }
+        else{
+            Class cryptoClass=availablePlugins[selectedPluginNumber-1];
+            Method encryptionMethod = cryptoClass.getDeclaredMethod("encode", byte[].class);
+            String chip=plugBox.getValue();
+
+
+
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Text Files", "*."+chip+".txt", "*."+chip+".csv"),
+                    new FileChooser.ExtensionFilter("Binar Files", "*."+chip+".dat"),
+                    new FileChooser.ExtensionFilter("JSON Files", "*."+chip+".json"));
+            File selectedFile = fileChooser.showSaveDialog(new Stage());
+            if (selectedFile != null) {
+                String name = selectedFile.getPath();
+                String[] split = name.split("\\.");
+                String ext = split[split.length - 1];
+                System.out.println(name);
+                System.out.println(ext);
+                switch (ext) {
+                    case ("json"):
+                        plagJsonConverter conv = new plagJsonConverter();
+                        conv.serialise(personData, name,cryptoClass,encryptionMethod);
+                        break;
+                    case ("dat"):
+                        plagBinarConverter binar = new plagBinarConverter();
+                        binar.serialise(personData, name,cryptoClass,encryptionMethod);
+                        break;
+                    case ("csv"):
+                    case ("txt"):
+                        plagTextConverter tex = new plagTextConverter();
+                        tex.serialise(personData, name,cryptoClass,encryptionMethod);
+                        break;
+                }
             }
         }
     }
 
     @FXML
     public void onClickMethodLoad() throws Exception {
+
+        ObservableList<String> plugs = plugBox.getItems();
+        int selectedPluginNumber = plugs.indexOf(plugBox.getValue());
+
+
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open File");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("Text Files", "*.txt","*.csv"),
-                new FileChooser.ExtensionFilter("Binar Files", "*.dat"),
-                new FileChooser.ExtensionFilter("JSON Files", "*.json"));
-        File selectedFile = fileChooser.showOpenDialog(new Stage());
-        if (selectedFile != null) {
-            String name = selectedFile.getPath();
-            String[] split = name.split("\\.");
-            String ext = split[split.length - 1];
-            System.out.println(name);
-            System.out.println(ext);
-            switch (ext) {
-                case ("json"):
-                    JsonConverter conv = new JsonConverter();
-                    personData = conv.deserialise(name, personData);
-                    break;
-                case ("dat"):
-                    BinarConverter binar = new BinarConverter();
-                    personData = binar.deserialise(name, personData);
-                    break;
-                case ("csv"):
-                case ("txt"):
-                    TextConverter text = new TextConverter();
-                    personData = text.deserialise(name, personData);
-                    break;
+        if (plugBox.getValue()=="None") {
+            fileChooser.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Text Files", "*.txt", "*.csv"),
+                    new FileChooser.ExtensionFilter("Binar Files", "*.dat"),
+                    new FileChooser.ExtensionFilter("JSON Files", "*.json"));
+            File selectedFile = fileChooser.showOpenDialog(new Stage());
+            if (selectedFile != null) {
+                String name = selectedFile.getPath();
+                String[] split = name.split("\\.");
+                String ext = split[split.length - 1];
+                System.out.println(name);
+                System.out.println(ext);
+                switch (ext) {
+                    case ("json"):
+                        JsonConverter conv = new JsonConverter();
+                        personData = conv.deserialise(name, personData);
+                        break;
+                    case ("dat"):
+                        BinarConverter binar = new BinarConverter();
+                        personData = binar.deserialise(name, personData);
+                        break;
+                    case ("csv"):
+                    case ("txt"):
+                        TextConverter text = new TextConverter();
+                        personData = text.deserialise(name, personData);
+                        break;
+                }
+                personTable.setItems(personData);
             }
-            personTable.setItems(personData);
+        }
+        else {
+            ObservableList<FileChooser.ExtensionFilter> filters = FXCollections.observableArrayList();
+            for (int i = 1; i < plugs.size(); i++) {
+                filters.add(new FileChooser.ExtensionFilter("Text Files", "*." + plugs.get(i) + ".txt", "*." + plugs.get(i) + ".csv"));
+                filters.add(new FileChooser.ExtensionFilter("Binar Files", "*." + plugs.get(i) + ".dat"));
+                filters.add(new FileChooser.ExtensionFilter("JSON Files", "*." + plugs.get(i) + ".json"));
+            }
+
+
+            fileChooser.getExtensionFilters().addAll(filters);
+            File selectedFile = fileChooser.showOpenDialog(new Stage());
+            if (selectedFile != null) {
+                String name = selectedFile.getPath();
+                String[] split = name.split("\\.");
+                String ext = split[split.length - 1];
+                System.out.println(name);
+                System.out.println(ext);
+                switch (ext) {
+                    case ("json"):
+                        plagJsonConverter conv = new plagJsonConverter();
+                        personData = conv.deserialise(name,personData);
+                        break;
+                    case ("dat"):
+                        plagBinarConverter binar = new plagBinarConverter();
+                        personData = binar.deserialise(name, personData);
+                        break;
+                    case ("csv"):
+                    case ("txt"):
+                        plagTextConverter text = new plagTextConverter();
+                        personData = text.deserialise(name, personData);
+                        break;
+                }
+                personTable.setItems(personData);
+            }
         }
     }
 
@@ -545,6 +639,7 @@ public class Controller {
 
     @FXML
     private void initialize() {
+        plugBox.setValue("None");
         // Инициализация таблицы адресатов с четырьмя столбцами.
         id.setCellValueFactory(new PropertyValueFactory("id"));
         name.setCellValueFactory(new PropertyValueFactory("name"));
@@ -805,4 +900,57 @@ public class Controller {
 
         return flag;
     }
+//=========================================PLUGINS==========================================
+
+    public void onClickMethodPlug(Event event) {
+        ObservableList<String> test = FXCollections.observableArrayList("one", "two", "three", "etc");
+
+
+
+        try {
+            availablePlugins = getClassesArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        ObservableList<String> pluginsList =  FXCollections.observableArrayList("None");
+
+        for (int i = 0; i < availablePlugins.length; i++) {
+            pluginsList.add(availablePlugins[i].toString().substring(availablePlugins[i].toString().indexOf('.') + 1));
+        }
+
+        System.out.println(pluginsList);
+        plugBox.setItems( pluginsList );
+    }
+
+    public static Class<?>[] getClassesArray() throws IOException {
+        ArrayList<Class<?>> list = new ArrayList<Class<?>>(0);
+        for(File f : getPackageContent("plugins")) {
+            String name = f.getName();
+            if (name.contains(".")) {
+                name = name.substring(0, name.lastIndexOf('.'));
+            }
+            try {
+                Class<?> cl = Class.forName("plugins." + name);
+                list.add(cl);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        return list.toArray(new Class<?>[]{});
+    }
+
+    private static File[] getPackageContent(String packageName) throws IOException {
+        ArrayList<File> list = new ArrayList<File>(0);
+        Enumeration<URL> urls = Thread.currentThread().getContextClassLoader().getResources(packageName);
+        while (urls.hasMoreElements()) {
+            URL url = urls.nextElement();
+            File dir = new File(url.getFile());
+
+            Collections.addAll(list, Objects.requireNonNull(dir.listFiles()));
+        }
+        return list.toArray(new File[]{});
+    }
+
+
 }
+
